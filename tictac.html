@@ -4,18 +4,20 @@
   <title>TicTac</title>
 </head>
 <style>
-  * {margin:5px; font-family:courier; font-size:15px;}
-  input, button {padding:15px}
-  .chrono {display:inline-block; vertical-align:top; border:1px solid}
-  textarea {display:block; overflow-y:scroll}
+  * {margin:5px; font-family:courier,monospace; font-size:15px;}
+  button {width:80px; height:40px}
+  input {width:120px; height:40px}
+  .chrono {display:inline-block; vertical-align:top}
+  textarea {display:block; height:32px; width:350px; tab-size:2; -moz-tab-size:2; -o-tab-size:2}
 </style>
 <body>
-<input placeholder="Chrono" onchange="(chrono(this.value),this.value='')">
-<input placeholder="Collapse" type="number" onchange="collapse=Number(this.value)">
+<input placeholder="New chrono" onchange="(chrono(this.value),this.value='')">
+<input placeholder="Race/line" type="number" onchange="collapse=Number(this.value)">
 <button onclick="chain()">Chain</button>
 <br>
 <div id="chronos"></div>
 <script type="text/javascript">
+//   input, button {padding:15px}
   var collapse = 1;
   var chronos = document.getElementById("chronos");
   var chain = (function (counter) {
@@ -35,7 +37,7 @@
     (a2 = document.createElement("a"), a2.textContent = "--", a2.href = "javascript:");
     (button1 = document.createElement("button"), button1.textContent = "Start");
     (button2 = document.createElement("button"), button2.textContent = "Split");
-    (textarea = document.createElement("textarea"), textarea.rows = 1, textarea.cols = 40);
+    (textarea = document.createElement("textarea"), textarea.wrap = "off");
     [span, a1, a2, button1, button2, textarea].forEach(div.appendChild.bind(div));
     chronos.appendChild(div);
     a1.onclick = function () {
@@ -54,6 +56,7 @@
       }
     };
     button1.onclick = function () {
+      button1.textContent = time ? "Start" : "Stop";
       button2.disabled = time;
       if (time) {
         button2.onclick();
@@ -63,7 +66,12 @@
       }
       time = time ? null : new Date().getTime();
     };
-    button2.onclick = function () { textarea.value += "\t" + format(new Date().getTime() - time) };
+    button2.onclick = function () {
+      var prev = textarea.value[textarea.value.length-1];
+      if (prev !== undefined && prev !== "\n")
+        textarea.value += "\t";
+      textarea.value += format(new Date().getTime() - time);
+    };
   }
   function format (time) {
     var min = Math.floor(time / (60 * 1000));
