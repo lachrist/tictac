@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TicTac</title>
+</head>
+<style>
+  * {margin:5px; font-family:courier; font-size:15px;}
+  input, button {padding:15px}
+  .chrono {display:inline-block; vertical-align:top; border:1px solid}
+  textarea {display:block; overflow-y:scroll}
+</style>
+<body>
+<input placeholder="Chrono" onchange="(chrono(this.value),this.value='')">
+<input placeholder="Collapse" type="number" onchange="collapse=Number(this.value)">
+<button onclick="chain()">Chain</button>
+<br>
+<div id="chronos"></div>
+<script type="text/javascript">
+  var collapse = 1;
+  var chronos = document.getElementById("chronos");
+  var chain = (function (counter) {
+    return function () {
+      if (counter === chronos.children.length)
+        counter = 0;
+      chronos.children[counter].children[3].onclick();
+      counter++;
+    };
+  } (0));
+  function chrono (name) {
+    var time = null, column = 0;
+    var div, span, a1, a2, button1, button2, textarea;
+    (div = document.createElement("div"), div.className = "chrono");
+    (span = document.createElement("span"), span.textContent = name);
+    (a1 = document.createElement("a"), a1.textContent = "++", a1.href = "javascript:");
+    (a2 = document.createElement("a"), a2.textContent = "--", a2.href = "javascript:");
+    (button1 = document.createElement("button"), button1.textContent = "Start");
+    (button2 = document.createElement("button"), button2.textContent = "Split");
+    (textarea = document.createElement("textarea"), textarea.rows = 1, textarea.cols = 40);
+    [span, a1, a2, button1, button2, textarea].forEach(div.appendChild.bind(div));
+    chronos.appendChild(div);
+    a1.onclick = function () {
+      var node = div.previousSibling;
+      if (node) {
+        node.parentNode.removeChild(div);
+        node.parentNode.insertBefore(div, node);
+      }
+    };
+    a2.onclick = function () {
+      var node1 = div.nextSibling;
+      if (node1) {
+        var node2 = node1.nextSibling;
+        node1.parentNode.removeChild(div);
+        node2 ? node1.parentNode.insertBefore(div, node2) : node1.parentNode.appendChild(div);
+      }
+    };
+    button1.onclick = function () {
+      button2.disabled = time;
+      if (time) {
+        button2.onclick();
+      } else {
+        column = column === collapse ? (textarea.value += "\n", 1) : column + 1;
+        textarea.scrollTop = textarea.scrollHeight;
+      }
+      time = time ? null : new Date().getTime();
+    };
+    button2.onclick = function () { textarea.value += "\t" + format(new Date().getTime() - time) };
+  }
+  function format (time) {
+    var min = Math.floor(time / (60 * 1000));
+    time = time % (60 * 1000);
+    var sec = Math.floor(time / 1000);
+    time = time % 1000;
+    var csc = Math.floor(time / 10);
+    return pad2(min) + ":" + pad2(sec) + "." + pad2(csc);
+  }
+  function pad2 (i) { return i === 0 ? "00" : (i < 10) ? "0" + i : String(i) }
+</script>
+</body>
+</html>
