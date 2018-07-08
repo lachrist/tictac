@@ -1,87 +1,77 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>TicTac</title>
-</head>
-<style>
-  * {margin:5px; font-family:courier,monospace; font-size:15px;}
-  button {width:80px; height:40px}
-  input {width:120px; height:40px}
-  .chrono {display:inline-block; vertical-align:top}
-  textarea {display:block; height:32px; width:350px; tab-size:2; -moz-tab-size:2; -o-tab-size:2}
-</style>
+<head><title>TicTac</title></head>
 <body>
-<input placeholder="New chrono" onchange="(chrono(this.value),this.value='')">
-<input placeholder="Race/line" type="number" onchange="collapse=Number(this.value)">
-<button onclick="chain()">Chain</button>
-<br>
-<div id="chronos"></div>
 <script type="text/javascript">
-//   input, button {padding:15px}
-  var collapse = 1;
-  var chronos = document.getElementById("chronos");
-  var chain = (function (counter) {
-    return function () {
-      if (counter === chronos.children.length)
-        counter = 0;
-      chronos.children[counter].children[3].onclick();
-      counter++;
-    };
-  } (0));
-  function chrono (name) {
-    var time = null, column = 0;
-    var div, span, a1, a2, button1, button2, textarea;
-    (div = document.createElement("div"), div.className = "chrono");
-    (span = document.createElement("span"), span.textContent = name);
-    (a1 = document.createElement("a"), a1.textContent = "++", a1.href = "javascript:");
-    (a2 = document.createElement("a"), a2.textContent = "--", a2.href = "javascript:");
-    (button1 = document.createElement("button"), button1.textContent = "Start");
-    (button2 = document.createElement("button"), button2.textContent = "Split");
-    (textarea = document.createElement("textarea"), textarea.wrap = "off");
-    [span, a1, a2, button1, button2, textarea].forEach(div.appendChild.bind(div));
-    chronos.appendChild(div);
-    a1.onclick = function () {
-      var node = div.previousSibling;
-      if (node) {
-        node.parentNode.removeChild(div);
-        node.parentNode.insertBefore(div, node);
-      }
-    };
-    a2.onclick = function () {
-      var node1 = div.nextSibling;
-      if (node1) {
-        var node2 = node1.nextSibling;
-        node1.parentNode.removeChild(div);
-        node2 ? node1.parentNode.insertBefore(div, node2) : node1.parentNode.appendChild(div);
-      }
-    };
-    button1.onclick = function () {
-      button1.textContent = time ? "Start" : "Stop";
-      button2.disabled = time;
-      if (time) {
-        button2.onclick();
-      } else {
-        column = column === collapse ? (textarea.value += "\n", 1) : column + 1;
-        textarea.scrollTop = textarea.scrollHeight;
-      }
-      time = time ? null : new Date().getTime();
-    };
-    button2.onclick = function () {
-      var prev = textarea.value[textarea.value.length-1];
-      if (prev !== undefined && prev !== "\n")
-        textarea.value += "\t";
-      textarea.value += format(new Date().getTime() - time);
-    };
-  }
-  function format (time) {
-    var min = Math.floor(time / (60 * 1000));
-    time = time % (60 * 1000);
-    var sec = Math.floor(time / 1000);
-    time = time % 1000;
-    var csc = Math.floor(time / 10);
-    return pad2(min) + ":" + pad2(sec) + "." + pad2(csc);
-  }
-  function pad2 (i) { return i === 0 ? "00" : (i < 10) ? "0" + i : String(i) }
+document.body.style.fontFamily = "monospace";
+document.body.style.fontSize = "16px";
+const make_button = (text, onclick) => {
+  const button = document.createElement("button");
+  button.style.fontSize = "inherit";
+  button.onclick = onclick;
+  button.innerText = text;
+  button.style.fontFamily = "inherit";
+  button.style.width = "200px";
+  button.style.height = "50px";
+  button.style.margin = "30px";
+  return button;
+};
+const format = (csec) => {
+  const min = Math.floor(csec/(100*60));
+  csec = csec - min * 100 * 60;
+  const sec = Math.floor(csec/100);
+  csec = csec - sec * 100;
+  return (min<10?"0":"")+min+":"+(sec<10?"0":"")+sec+"."+(csec<10?"0":"")+csec;
+};
+const parse = (string) => {
+  const [match, min, sec, csec] = /^([0-9]+):([0-9][0-9])\.([0-9][0-9])$/.exec(string);
+  return parseInt(min) * 60 * 100 + parseInt(sec) * 100 + parseInt(csec);
+};
+const type = new URL(location.href).searchParams.get("type");
+window.onbeforeunload = (event) => {
+  return event.returnValue = "If you leave this page, your times will be lost!";
+};
+const closures = (new URL(location.href).searchParams.getAll("alias")).map((alias, position) => {
+  let counter = 0;
+  let previous = null;
+  const button = make_button(alias, () => {
+    if (previous) {
+      const current = Date.now();
+      const lines = textarea.value.split("\n");
+      lines[position] += "\t" + format(Math.floor((current-previous)/10));
+      if (type === "broken")
+        counter = 0
+      previous = type === "split" ? current : null;
+      button.style.backgroundColor = "LightGreen";
+      textarea.value = lines.join("\n");
+    } else {
+      counter = 0;
+      if (type !== "split")
+        button.style.backgroundColor = "LightCoral";
+      previous = Date.now();
+    }
+  });
+  button.style.backgroundColor = "LightGreen";
+  document.body.appendChild(button);
+  return () => { button.innerText = alias+" "+format((++counter)*100) };
+});
+const apply = (closure) => closure(); 
+setInterval(() => { closures.forEach(apply) }, 1000);
+const button = make_button("Sum", () => {
+  textarea.value = textarea.value.split("\n").map((line) => {
+    return line + "\t" + format(line.split("\t").slice(1).map(parse).reduce((x1, x2) => x1 + x2, 0));
+  }).join("\n");
+});
+document.body.appendChild(button);
+const textarea = document.createElement("textarea");
+textarea.value = (new URL(location.href).searchParams.getAll("alias")).join("\n");
+textarea.style.width = "90%";
+textarea.style.margin = "30px";
+textarea.tabIndex = -1;
+textarea.rows = closures.length;
+textarea.style.fontFamily = "inherit";
+textarea.style.fontSize = "inherit";
+document.body.appendChild(textarea);
 </script>
 </body>
 </html>
